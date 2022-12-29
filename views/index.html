@@ -123,7 +123,7 @@
         try {
             let reg = await navigator.serviceWorker.ready;
             let sub = await reg.pushManager.getSubscription();
-            if (sub != null) {
+            if (sub === null) {
                 let publicKey = "BOh-7z_dSVwgpsMv4mbBPBXLiff1wnjDui10PTaGVCPb7-3rdZLoRfiGa1-W6oZzYQJZt_TXo_Z-D3fTGEc8Co8";
                 sub = await reg.pushManager.subscribe({
                     userVisibleOnly: true,

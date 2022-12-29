@@ -20,6 +20,10 @@ router.get('/sendNotification', async function(req, res, next) {
 router.post('/saveSender', function(req, res, next){
   var formData = req.body
   var date = new Date(formData.ts)
+  let hoursMin = date.toLocaleTimeString('hr-HR', {
+    hour: '2-digit',
+    minute: '2-digit',
+  });
   fs.writeFile('zadnjeSlikano.txt', formData.title + ', ' + date.getHours()+':'+date.getMinutes(), (err) => {
     if (err) throw err;
 })
