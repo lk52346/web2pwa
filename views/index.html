@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="manifest" crossorigin="use-credentials" href="/site.webmanifest"/>
+    <link rel="stylesheet" href="/stylesheets/style.css" />
+    <title>PWA</title>
+</head>
+<body>
+    <h1>PWA App</h1>
+    <img class="ferlogo" src="/images/FER_logo.jpg" width="300" height="200" />
+    <h2>Push notifikacije</h2>
+    <div class="indent">
+        <button id="btnNotif">Pretplati se na obavijesti</button>
+        <button id="btnSendNotif">Pošalji obavijest svima</button>
+    </div>
+    <hr>
+    <h2>Background sync</h2>
+    <div class="column indent">
+        <p>Na serveru zadnje poslano: </p>
+        <p id="zadnjeSlikano"></p>
+        <input type="text" id="snapName" placeholder="Tko šalje?"/>
+        <button id="btnUpload">Pošalji</button>
+        <p>Nakon slanja, refreshajte stranicu kako bi se vidjela nova vrijednost!</p>
+    </div>
+    <hr>
+    <h2>Native API (mikrofon)</h2>
+    <div class="indent">
+        <audio id="player" controls></audio>
+    </div>
+    
+</body>
+</html>
+<script type="module">
+    import { get, set } from "https://cdn.jsdelivr.net/npm/idb-keyval@6/+esm";
+
+    navigator.serviceWorker.register('sw.js', {type:"module"})
+        .then(reg => console.log
+            ('SW registered!', reg))
+        .catch(err => console.log
+            ('Error!', err)
+        );
+
+    startCapture();
+    
+
+
+    document.getElementById("btnUpload").addEventListener("click", function (event) {
+        if ("serviceWorker" in navigator && "SyncManager" in window) {
+            fetch("/zadnjeSlikano.txt")
+            .then((res) => {
+                let ts = new Date().toISOString();
+                let id = ts + document.getElementById("snapName").value.replace(/\s/g, "_");
+                set(id, { id, ts, title: snapName.value });
+                return navigator.serviceWorker.ready;
+            }).then((swRegistration) => {
+                return swRegistration.sync.register("sync-sender");
+            }).then(() => {
+                console.log("Queued for sync");
+            }).catch((err) => { console.log(err); });
+        } else {
+            alert("TODO - vaš preglednik ne podržava bckg sync...");
+        }
+    });
+
+    fetch("./zadnjeSlikano.txt").then((res)=>{
+        if(res.ok){
+            return res.text();
+        }
+    }).then((text)=>{
+        document.getElementById("zadnjeSlikano").innerHTML = text
+    })
+
+    function startCapture(){
+        if(!("mediaDevices" in navigator)) {
+            alert("No media devices!");
+        } else{
+            navigator.mediaDevices.getUserMedia(
+            {
+                audio: true
+            })
+            .then((stream) =>{
+                if (window.URL) {
+                    player.srcObject = stream;
+                } else {
+                    player.src = stream;
+                }
+                player.play();
+            }).catch((err) => {});
+        }
+    }
+
+    var btnNotif = document.getElementById("btnNotif");
+    var btnSendNotif = document.getElementById("btnSendNotif");
+
+    if ("Notification" in window && "serviceWorker" in navigator) {
+        btnNotif.addEventListener("click", function () {
+            Notification.requestPermission(
+            async function (res) {
+                if (res === "granted") {
+                    await setupPushSubscription();
+                } else
+                {
+                    console.log("User denied push notifs:", res);
+                }
+            });
+        });
+        btnSendNotif.addEventListener("click", function () {
+            fetch("/sendNotification").then((res)=>{
+                return res.text()
+            }).then((text)=>{
+                console.log(text);
+            })
+        });
+    } else {
+        btnNotif.setAttribute("disabled", "");
+        btnNotif.classList.add("btn-outline-danger");
+    }
+
+    async function setupPushSubscription() {
+        try {
+            let reg = await navigator.serviceWorker.ready;
+            let sub = await reg.pushManager.getSubscription();
+            if (sub != null) {
+                let publicKey = "BOh-7z_dSVwgpsMv4mbBPBXLiff1wnjDui10PTaGVCPb7-3rdZLoRfiGa1-W6oZzYQJZt_TXo_Z-D3fTGEc8Co8";
+                sub = await reg.pushManager.subscribe({
+                    userVisibleOnly: true,
+                    applicationServerKey: urlBase64ToUint8Array(publicKey)
+                });
+                let res  = await fetch("/saveSubscription", {
+                    method: "POST",
+                    headers: {
+                        'Content-Type': "application/json",
+                        'Accept': "application/json",
+                    },
+                    body: JSON.stringify({ sub }),
+                });
+                if (res.ok) {
+                    alert("Pretplaćeni ste");
+                }
+            } else {
+                alert("Već ste pretplaćeni");
+            }
+        } catch (error) {
+            console.log(error);
+        }
+    }
+
+    function urlBase64ToUint8Array(base64String) {
+    var padding = '='.repeat((4 - base64String.length % 4) % 4);
+    var base64 = (base64String + padding)
+        .replace(/\-/g, '+')
+        .replace(/_/g, '/');
+
+    var rawData = window.atob(base64);
+    var outputArray = new Uint8Array(rawData.length);
+
+    for (var i = 0; i < rawData.length; ++i) {
+        outputArray[i] = rawData.charCodeAt(i);
+    }
+    return outputArray;
+}
+    
+    
+</script>

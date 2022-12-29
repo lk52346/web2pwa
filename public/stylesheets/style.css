@@ -1,0 +1,50 @@
+body {
+  padding: 50px;
+  font: 14px "Lucida Grande", Helvetica, Arial, sans-serif;
+  background-color: bisque;
+}
+
+a {
+  color: #00B7FF;
+}
+
+h1{
+  text-align: center;
+  font-size: 50px;
+}
+
+.row{
+  display: flex;
+  flex-direction: row;
+  align-content: center;
+}
+
+.column{
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  width: auto;
+  gap: 5px;
+}
+
+.slikaj{
+  width: 100px;
+  height: 30px;
+  font-size: large;
+  font-weight: bold;
+}
+
+.ferlogo{
+  margin-left: auto;
+  margin-right: auto;
+  display: block;
+}
+
+#zadnjeSlikano {
+  font-weight: bold;
+  font-size: large;
+}
+
+.indent{
+  padding-left: 20px;
+}
